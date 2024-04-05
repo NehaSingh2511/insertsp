@@ -1,0 +1,30 @@
+CREATE proc sp_addtocard      
+ @productid int,     
+ @UserId varchar(50),    
+ @pname varchar(100)=null,      
+ @Quantity int,      
+ @amount decimal(18,2) ,  
+ @billby nvarchar(100)     
+ as      
+ begin    
+  
+ declare @addressdata varchar(100),@totalamt decimal(18,2)=0,@Bv decimal(18,2)=0,@totBv decimal(18,2)=0,@GST decimal(18,2)=0,@GSTamt decimal(18,2)=0,  
+ @totGST decimal(18,2)=0  
+  
+ select @Bv=pv,@GST=gst,@GSTamt=gstamt from tblProduct where id=@productid  
+ set @totBv=@Bv*@Quantity  
+ set @totGST=@GSTamt*@Quantity  
+ if not exists(select 1 from tbl_Apptocarts where UserId=@UserId and productid=@productid and orderby=@billby)  
+ begin  
+ set @totalamt=@amount*@Quantity  
+ insert into tbl_Apptocarts(UserId,productid,ProductName,Quantity,status,createdate,amount,tamount,totBv,GST,orderby,gstamt)values(@UserId,@productid,@pname,@Quantity,1,GETDATE(),@amount,@totalamt,@totBv,@GST,@billby,@totGST)      
+   
+ end  
+ else  
+ begin  
+ set @totalamt=@amount*@Quantity  
+ Update tbl_Apptocarts set Quantity=@Quantity,totBv=@totBv,gstamt=@totGST,GST=@GST,createdate=(dateadd(minute,(30),dateadd(hour,(5),getutcdate()))),amount=@amount,tamount=@totalamt where  UserId=@UserId and productid=@productid and orderby=@billby      
+   
+  
+ end  
+ end  
